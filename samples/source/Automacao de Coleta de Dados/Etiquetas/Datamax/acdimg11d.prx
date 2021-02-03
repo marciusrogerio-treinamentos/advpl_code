@@ -1,0 +1,65 @@
+/*
+Padrão Datamax
+Programa: Img11d
+Autor: Marcelo Neumann
+Data: 01/06/20
+Descricao: Geração de etiqueta RFID para o produto
+*/
+User Function Img11d()
+	Local cProduto   := PARAMIXB[1]
+	Local cLote      := PARAMIXB[2]
+	Local cSubLote   := PARAMIXB[3]
+	Local cNumSeri   := PARAMIXB[4]
+	Local nQuant     := PARAMIXB[5]
+	Local nCopias    := PARAMIXB[6]
+	Local cAlias     := PARAMIXB[7]
+	Local cChaveOrig := PARAMIXB[8]
+	Local cEpc       := ""
+	Local cTexto     := ""
+	Local cCodBar    := AllTrim(SB1->B1_CODBAR)
+	Local cTipoBar   := "MB07"
+	Local nIndex     := 0
+
+	If Len(cCodBar) == 8
+		cTipoBar := 'MB03'
+	ElseIf Len(cCodBar) == 13
+		cTipoBar := 'MB04'
+	EndIf
+
+	For nIndex := 1 to nCopias
+		cEpc := RFIDNEWEPC(cProduto, cLote, cSubLote, cNumSeri, nQuant, cAlias, cChaveOrig)
+		If !Empty(cEpc)
+			MSCBLOADGRF("SIGA.BMP")
+			MSCBBEGIN(1,6)
+			MSCBLineH(30,35,76,1)
+			MSCBLineH(02,28,76,1)
+			MSCBLineH(02,13,76,1)
+			MSCBLineV(30,28,39,1)
+			MSCBGRAFIC(2,29,"SIGA",.T.)
+			MSCBSAY(33,36,'PRODUTO',"N","2","01,01")
+			MSCBSAY(33,32,"CODIGO","N","2","01,01")
+			MSCBSAY(33,29, AllTrim(SB1->B1_COD), "N", "2", "01,01")
+			MSCBSAY(05,25,"DESCRICAO","N","2","01,01")
+			MSCBSAY(05,22,SB1->B1_DESC,"N", "2", "01,01")
+
+			If !Empty(cLote)
+				cTexto := "Lote: " + AllTrim(cLote)
+				If !Empty(cSubLote)
+					cTexto += " - " + AllTrim(cSubLote)
+				EndIf
+				MSCBSAY(05,19,cTexto, "N", "2", "01,01")
+			EndIf
+
+			If !Empty(cNumSeri)
+				MSCBSAY(05,16,"Serie: " + cNumSeri, "N", "2", "01,01")
+			EndIf
+			
+			If !Empty(cCodBar)
+				MSCBSAYBAR(22,02,cCodBar,"N",cTipoBar,8.36,.F.,.T.,.F.,,3,2,.F.,.F.,"1",.T.)
+			EndIf
+
+			MSCBRfid(cEpc, 1500, 3, 0)
+			MSCBEND()
+		EndIf
+	Next
+Return Nil

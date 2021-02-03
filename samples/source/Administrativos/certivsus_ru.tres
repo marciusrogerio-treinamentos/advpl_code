@@ -1,0 +1,32 @@
+0001#STR0001#ARG#CERTIFICATE OF IVA WITHHOLDING
+0002#STR0002#ARG#CERTIFICATE OF SUSS WITHHOLDING
+0003#STR0003#ARG#CONSTANCY OF WITHHOLDING FOR GENERAL USS METHOD
+0004#STR0004#ARG#CONSTANCY OF WITHHOLDING FOR ADDED VALUE
+0005#STR0005#ARG#Issue:
+0006#STR0006#ARG#Certificate:
+0007#STR0007#ARG#Supplier:
+0008#STR0008#ARG#Address:
+0009#STR0009#ARG#Province:
+0010#STR0010#ARG#CUIT No.
+0011#STR0011#ARG#Payment Order
+0012#STR0012#ARG#Paym. Order Tot.
+0013#STR0013#ARG#Rate
+0014#STR0014#ARG#Withheld Value
+0015#STR0015#ARG#Concept
+0016#STR0016#ARG#Reference
+0017#STR0017#ARG#Type
+0018#STR0018#ARG#Area Code/Number
+0019#STR0019#ARG#Installment
+0020#STR0020#ARG#Value w/o Taxes
+0021#STR0021#ARG#Tax Value
+0022#STR0022#ARG#Withholding
+0023#STR0023#ARG#Signature
+0024#STR0024#ARG#Information about the statement of
+0025#STR0025#ARG#of
+0026#STR0026#ARG#INVALID RECEIPT WITH RETENTION CERTIFICATE
+0027#STR0027#ARG#Per RG 3726/15, from 03/01/2015, Retention Certificate of Social Security System must be generated and issued from 
+0028#STR0028#ARG#the Integral System of Electronic Retentions (SIRE) of Afip.
+0029#STR0029#ARG#You can go to Afip web page to obtain retention receipt of the present payment whose identification is: 
+0030#STR0030#ARG#Certificate Nº: 
+0031#STR0031#ARG#Security Code: 
+0032#STR0032#ARG#Respecting upper and lower case letters.

@@ -1,0 +1,1197 @@
+#INCLUDE "MATA590.CH"
+#INCLUDE "PROTHEUS.CH"
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡ao    ³ Mata590  ³ Autor ³ Edson Maricate        ³ Data ³ 03.02.98 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Depuracao dos Arquivos do Estoque.                         ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Mata590(void)                                              ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ Estoque                                                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³         ATUALIZACOES SOFRIDAS DESDE A CONSTRU€AO INICIAL.             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Programador ³ Data   ³ BOPS ³  Motivo da Alteracao                     ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Rodrigo Sart³26/10/98³17916A³ Acerto nos arquivos a serem gravados na  ³±±
+±±³            ³        ³      ³ versao Windows.                          ³±±
+±±³Patricia Sal³29/03/00³003400³ Acerto na criacao do arquivo morto.      ³±±
+±±³Marcelo Iusp³20/04/00³      ³ Inclusão do SD7 (CQ) na limpeza e        ³±±
+±±³            ³        ³      ³ validação na data digitada pelo usuario  ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function MATA590()
+Local nOpc    := 0
+Local nOpca   := 0
+Local oChk, oDlg, oLimpa
+Local cVar
+
+Private cSavScr1,cSavCur1,cSavRow1,cSavCol1,cSavCor1,cSavScr3
+Private dDataFim  := Ctod("  /  /  ")
+Private aDbf      := {}
+Private dDataFech := MVUlmes()
+
+cMens := OemToAnsi(STR0001)+chr(13)		//"Esta  rotina  exige  que  os   arquivos"
+cMens += OemToAnsi(STR0002)+chr(13)		//"associados a ela n†o estejam em uso por"
+cMens += OemToAnsi(STR0003)+chr(13)		//"outras esta‡”es."
+cMens += OemToAnsi(STR0004)+chr(13)		//"Fa‡a com que os outros usu rios saiam do"
+cMens += OemToAnsi(STR0005)+chr(13)		//"sistema."
+If !MsgYesNo(cMens,OemToAnsi(STR0006))	//"ATEN€ŽO"
+	Return
+EndIf
+If Empty(aDbf)
+	aDbf := Fa590Arq({"SC2","SBC","SD4","SD5","SD3","SB9","SB7","SD7","SDC"})
+EndIf
+DEFINE MSDIALOG oDlg FROM  71,50 TO 368,495 TITLE OemToAnsi(STR0007) PIXEL		//"Limpeza Mensal"
+@ 03,007 TO 43,215 PIXEL OF oDlg
+@ 49,007 TO 76,215 PIXEL OF oDlg
+@ 11,010 SAY OemToAnsi(STR0008) SIZE 200,7 OF oDlg PIXEL 		//"Este programa tem o objetivo de efetuar a limpeza de arquivos do m¢dulo SIGAEST."
+@ 21,010 SAY OemToAnsi(STR0009) SIZE 200,7 OF oDlg PIXEL   		//"Dever  ser informada a data limite para limpeza.  Os registros deletados serÆo"
+@ 31,010 SAY OemToAnsi(STR0010) SIZE 200,7 OF oDlg PIXEL   		//"armazenados em um jogo de arquivos a serem gerados pelo programa."
+@ 61,010 SAY OemToAnsi(STR0011) SIZE 55,7 OF oDlg PIXEL    		//"Data Limite"
+@ 61,085 SAY OemToAnsi(STR0012) SIZE 55,7 OF oDlg PIXEL   		//"Diret¢rio"
+@ 59,038 MSGET dDataFim Picture "99/99/99"  SIZE 40, 10 OF oDlg PIXEL Valid NaoVazio(dDataFim) .And. A590VerFech(dDataFim)
+@ 85,007 LISTBOX oLimpa VAR cVar Fields HEADER OemToAnsi(STR0022)  SIZE 208,42 OF oDlg PIXEL ON DBLCLICK ( U_FA590File(oLimpa:nAt),oLimpa:Refresh()) NOSCROLL //Arquivos
+
+oLimpa:SetArray(aDbf)
+oLimpa:bLine := { || { aDbf[oLimpa:nAt] } }
+DEFINE SBUTTON FROM 132,146 TYPE 1 ENABLE OF oDlg ACTION (nOpca:=1,If( U_Fa590Teste(dDataFim),oDlg:End(),nOpca:=0))
+DEFINE SBUTTON FROM 132,174 TYPE 2 ENABLE OF oDlg ACTION oDlg:End()
+ACTIVATE MSDIALOG oDlg CENTERED
+If nOpca == 1
+	Processa( {|lEnd| FA590Executa() } )
+EndIf
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÉÍÍÍÍÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍËÍÍÍÍÍÍÑÍÍÍÍÍÍÍÍÍÍÍÍ»±±
+±±ºPrograma   ³MATA590   ºAutor  ³Microsiga           º Data ³  19/04/00  º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÊÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºA590VerFech³ Checa se data e anterior ao mv_ulmes, retornando falso.   º±±
+±±º           ³ Caso contrario, retorna verdadeiro                        º±±
+±±ÌÍÍÍÍÍÍÍÍÍÍÍØÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¹±±
+±±ºUso        ³ AP5                                                       º±±
+±±ÈÍÍÍÍÍÍÍÍÍÍÍÏÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ¼±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function A590VerFech(dData)
+If dData > dDataFech
+	Help(" ", 1, "FECHTOANT")
+	Return(.F.)
+Else
+	Return(.T.)
+Endif		
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590Executa ³ Autor ³ Edson Maricate    ³ Data ³ 03.02.98 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Executa a limpeza dos arquivos no modulo de Estoque        ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ Fa590Executa()                                             ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+*/
+Static Function Fa590Executa()
+Local lDelFisico:= SuperGetMV("MV_DELM590",.T.,1) == 1  //Se = 1 Deleta Fisicamente e = 2 Deleta logicamente
+Local nX := 0
+Local nY := 0
+Local cQuery := ""
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Atualiza o log de processamento   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogAtu("INICIO")
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿	
+//³ Inicializa o log de processamento   ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogIni( {},"MATA590")
+
+If Ma280fLock("SD3") .And.;
+   Ma280fLock("SB9") .And.;
+   Ma280fLock("SD4") .And.;
+   Ma280fLock("SC2") .And.;
+   Ma280fLock("SBC") .And.;
+   Ma280fLock("SD5") .And.;
+   Ma280fLock("SB7") .And.;
+   Ma280fLock("SD7") .And.;
+   Ma280fLock("SDC")
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0018,STR0018) //"Iniciando Depuracao de Estoque"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Gera arquivo morto e deleta os registros SC2       			 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Fa590SC2(dDataFim,aDbf)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Gera arquivo morto e deleta os registros SD5       			 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Fa590SD5(dDataFim,aDbf)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Gera arquivo morto e deleta os registros SD3       			 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Fa590SD3(dDataFim,aDbf)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Gera arquivo morto e deleta os registros SB9       			 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Fa590SB9(dDataFim,aDbf)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Gera arquivo morto e deleta os registros SB7       			 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Fa590SB7(dDataFim,aDbf)
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Gera arquivo morto e deleta os registros SB7       			 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	Fa590SD7(dDataFim,aDbf)
+
+	ProcRegua(8)
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019+" - SC2",STR0019+" - SC2") //"Recuperando espaco fisico - SC2"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SC2		   				     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SC2")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SC2")
+	If lDelFisico
+		nX := 0
+		nY := SC2->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SC2")+" "
+		cQuery += "WHERE C2_FILIAL='"+xFilial("SC2")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019 + " - SBC",STR0019 + " - SBC") //"Recuperando espaco fisico - SBC"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SBC						     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SBC")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SBC")
+	If lDelFisico
+		nX := 0
+		nY := SBC->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SBC")+" "
+		cQuery += "WHERE BC_FILIAL='"+xFilial("SBC")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019 + " - SD4",STR0019 + " - SD4") //"Recuperando espaco fisico - SD4"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SD4		   				     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SD4")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SD4")
+	If lDelFisico
+		nX := 0
+		nY := SD4->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SD4")+" "
+		cQuery += "WHERE D4_FILIAL='"+xFilial("SD4")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019 + " - SD5",STR0019 + " - SD5") //"Recuperando espaco fisico - SD5"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SD5						     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SD5")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SD5")
+	If lDelFisico
+		nX := 0
+		nY := SD5->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SD5")+" "
+		cQuery += "WHERE D5_FILIAL='"+xFilial("SD5")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019 + " - SD3",STR0019 + " - SD3") //"Recuperando espaco fisico - SD3"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SD3		   				     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SD3")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SD3")
+	If lDelFisico
+		nX := 0
+		nY := SD3->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SD3")+" "
+		cQuery += "WHERE D3_FILIAL='"+xFilial("SD3")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019 + " - SB9",STR0019 + " - SB9") //"Recuperando espaco fisico - SB9"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SB9	    				     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SB9")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SB9")
+	If lDelFisico
+		nX := 0
+		nY := SB9->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SB9")+" "
+		cQuery += "WHERE B9_FILIAL='"+xFilial("SB9")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019 + " - SB7",STR0019 + " - SB7") //"Recuperando espaco fisico - SB7"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SB7		   				     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SB7")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SB7")
+	If lDelFisico
+		nX := 0
+		nY := SB7->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SB7")+" "
+		cQuery += "WHERE B7_FILIAL='"+xFilial("SB7")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0019 + " - SD7",STR0019 + " - SD7") //"Recuperando espaco fisico - SD7"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Apaga os registros deletados SD7		                     ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	IncProc(OemToAnsi(STR0013)+" - SD7")	//"Recuperando espa‡o f¡sico no arquivo"
+	dbSelectArea("SD7")
+	If lDelFisico
+		nX := 0
+		nY := SD7->(LastRec())
+		cQuery := "DELETE FROM "+RetSqlName("SD7")+" "
+		cQuery += "WHERE D7_FILIAL='"+xFilial("SD7")+"' AND "
+		cQuery += "D_E_L_E_T_='*' AND "
+		While ( nX < nY )
+			TcSqlExec(cQuery+"R_E_C_N_O_>="+Str(nX,10,0)+" AND R_E_C_N_O_<="+Str(nX+1023,10,0)+"")
+			nX += 1024
+		EndDo		
+	EndIf
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Abre novamente os arquivos do Sistema		                 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	dbCloseAll()
+	OpenFile(SubStr(cNumEmp,1,2))
+	dbSelectArea("SX2")
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento			    ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("MENSAGEM",STR0020,STR0020) //"Termino da Depuracao de Estoque"
+
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Atualiza o log de processamento   ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	ProcLogAtu("FIM")
+	
+EndIf
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590SC2 ³ Autor ³ Edson Maricate        ³ Data ³ 04.02.98 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Grava no arquivo morto e deleta os registros do SC2.		  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Fa590SC2(dDataFim,cDbf)                  				  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Fa590SC2(dDataFim,aDbf)
+Local nCont     := 0
+Local nPos      := 0
+Local nX        := 0
+Local cCampo    := ''
+Local cVal      := ''
+Local cQuery    := ''
+Local cAliasSC2 := 'SC2'
+Local cFilSBC   := 'SBC'
+Local cFilSD4   := 'SD4'
+Local aStruSC2  := {}
+Local lQuery    := .F.
+
+Private cArqSC2 := ''
+Private cArqSBC := ''
+Private cArqSD4 := ''
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Atualiza o log de processamento			    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogAtu("MENSAGEM",STR0021 + " SC2",STR0021 + " SC2") //"Limpeza de Registros - Tabela SC2"
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SC2								     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SC2")
+cArqSC2 := aDbf[1]
+aStruTb:= SC2->(dbStruct())
+dbCreate(cArqSC2,aStruTb,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSC2,cArqSC2,.T.,.F.)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SBC								     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SBC")
+cArqSBC := aDbf[2]
+aStruTbBC:= SBC->(dbStruct())
+dbCreate(cArqSBC,aStruTbBC,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSBC,cArqSBC,.T.,.F.)
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SBC								           ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SD4")
+cArqSD4 := aDbf[3]
+aStruTbD4:= SBC->(dbStruct())
+dbCreate(cArqSD4,aStruTbD4,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSD4,cArqSD4,.T.,.F.)
+
+dbSelectArea("SD4")
+dbSetOrder(2)
+dbSelectArea("SBC")
+dbSetOrder(1)
+dbSelectArea("SC2")
+
+lQuery    := .T.
+aStruSC2  := SC2->(dbStruct())
+cAliasSC2 := GetNextAlias()
+
+cQuery    := "SELECT SC2.*,SC2.R_E_C_N_O_ SC2RECNO "
+cQuery    +=  " FROM " + RetSqlName("SC2")+" SC2 "
+cQuery    += " WHERE SC2.C2_FILIAL ='"   + xFilial("SC2") + "' AND "
+    cQuery    +=       " SC2.C2_DATRF <= '"  + DTOS(dDataFim) + "' AND "
+    cQuery    +=       " SC2.C2_DATRF <> '"  + Space(TamSX3("C2_DATRF")[1]) + "' AND "
+cQuery    +=       " SC2.D_E_L_E_T_=' ' "
+cQuery    := ChangeQuery(cQuery)
+
+dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),cAliasSC2,.T.,.T.)
+For nX := 1 To Len(aStruSC2)
+	If aStruSC2[nX,2]<>"C" .And. aStruSC2[nX,2]<>"M" .And. aStruSC2[nX,3] > 0 
+		TcSetField(cAliasSC2,aStruSC2[nX,1],aStruSC2[nX,2],aStruSC2[nX,3],aStruSC2[nX,4])
+	EndIf
+Next nX
+
+ProcRegua(SC2->(RecCount()),21,4)
+While !Eof() .And. IIf(lQuery,.T.,SC2->C2_FILIAL == xFilial("SC2"))
+
+	If !lQuery .And. (Empty((cAliasSC2)->C2_DATRF) .Or. (cAliasSC2)->C2_DATRF > dDataFim)
+		dbSelectArea(cAliasSC2)
+		dbSkip()
+		Loop
+	EndIf
+
+	// Pesquisar OPs na tabela SBC
+	dbSelectArea("SBC")
+	dbSeek(cFilSBC+(cAliasSC2)->C2_NUM+(cAliasSC2)->C2_ITEM+(cAliasSC2)->C2_SEQUEN+(cAliasSC2)->C2_ITEMGRD)
+	If Found() .And. !Eof()
+		While !Eof() .And. BC_OP == (cAliasSC2)->C2_NUM+(cAliasSC2)->C2_ITEM+(cAliasSC2)->C2_SEQUEN+(cAliasSC2)->C2_ITEMGRD
+			//	Gera Registro no arquivo morto
+			RecLock(cArqSBC,.T.)
+			For nCont := 1 To Fcount()
+				dbSelectArea("SBC")
+				cCampo 	:= FieldName(nCont)
+				cVal	:= FieldGet(FieldPos(cCampo))
+				dbSelectArea(cArqSBC)
+				nPos	:= FieldPos(cCampo)
+				FieldPut(nPos,cVal)
+			Next nCont
+			MsUnlock()
+			//	Deleta registro do arquivo de origem
+			dbSelectArea("SBC")
+			RecLock("SBC",.F.,.T.)
+			dbDelete()
+			MsUnlock()
+			dbSkip()
+		End
+	EndIf		
+	dbSelectArea("SD4")
+	dbSeek(cFilSD4+(cAliasSC2)->C2_NUM+(cAliasSC2)->C2_ITEM+(cAliasSC2)->C2_SEQUEN+(cAliasSC2)->C2_ITEMGRD)
+	If Found() .And. !Eof()
+		While !Eof() .And. D4_OP == (cAliasSC2)->C2_NUM+(cAliasSC2)->C2_ITEM+(cAliasSC2)->C2_SEQUEN+(cAliasSC2)->C2_ITEMGRD
+			// Gera Registro no arquivo morto
+			RecLock(cArqSD4,.T.)
+			For nCont := 1 To Fcount()
+				dbSelectArea("SD4")
+				cCampo 	:= FieldName(nCont)
+				cVal	:= FieldGet(FieldPos(cCampo))
+				dbSelectArea(cArqSD4)
+				nPos	:= FieldPos(cCampo)
+				FieldPut(nPos,cVal)
+			Next nCont
+			MsUnlock()
+			//	Deleta registro do arquivo de origem
+			dbSelectArea("SD4")
+			RecLock("SD4",.F.,.T.)
+			dbDelete()
+			MsUnlock()
+			dbSkip()
+		End
+	EndIf		
+	IncProc(OemToAnsi(STR0014)+" SC2")		//"Efetuando limpeza no arquivo"	
+	//	Gera Registro no arquivo morto
+	RecLock(cArqSC2,.T.)
+	For nCont := 1 To Fcount()
+		dbSelectArea(cAliasSC2)
+		cCampo 	:= FieldName(nCont)
+		cVal	:= FieldGet(FieldPos(cCampo))
+		dbSelectArea(cArqSC2)
+		nPos	:= FieldPos(cCampo)
+		FieldPut(nPos,cVal)
+	Next nCont
+	MsUnlock()	
+	//	Deleta registro do arquivo de origem
+	dbSelectArea("SC2")
+	If lQuery
+		dbGoto((cAliasSC2)->SC2RECNO)
+	EndIf
+	RecLock("SC2",.F.,.T.)
+	dbDelete()
+	MsUnlock()	
+	dbSelectArea(cAliasSC2)
+	dbSkip()	
+End	
+dbSelectArea(cArqSC2)
+dbCloseArea()
+dbSelectArea(cArqSBC)
+dbCloseArea()
+If lQuery
+	dbSelectArea(cAliasSC2)
+	dbCloseArea()
+EndIf
+dbSelectArea("SC2")
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590SD5 ³ Autor ³ Edson Maricate        ³ Data ³ 04.02.98 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Grava no arquivo morto e deleta os registros do SD5.		  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Fa590SD5(dDataFim,cDbf)                  				  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Fa590SD5(dDataFim,aDbf)
+Local nCont     := 0
+Local nPos      := 0
+Local nX        := 0
+Local cCampo    := ''
+Local cVal      := ''
+Local cQuery    := ''
+Local cAliasSD5 := 'SD5'
+Local aStruSD5  := {}
+Local lQuery    := .F.
+Local cFilSC2   := xFilial("SC2")
+
+Private cArqSD5 := ''
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Atualiza o log de processamento			    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogAtu("MENSAGEM",STR0021 + " SD5",STR0021 + " SD5") //"Limpeza de Registros - Tabela SD5"
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SD5                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SD5")
+cArqSD5 := aDbf[4]
+aStruTbD5:= SD5->(dbStruct())
+dbCreate(cArqSD5,aStruTbD5,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSD5,cArqSD5,.T.,.F.)
+
+dbSelectArea("SC2")
+dbSetOrder(1)
+dbSelectArea("SD5")
+
+lQuery    := .T.
+aStruSD5  := SD5->(dbStruct())
+cAliasSD5 := GetNextAlias()
+
+cQuery    := "SELECT SD5.*,SD5.R_E_C_N_O_ SD5RECNO "
+cQuery    +=  " FROM " + RetSqlName("SD5")+" SD5 "
+cQuery    += " WHERE SD5.D5_FILIAL = '" + xFilial("SD5") + "' AND "
+    cQuery    +=       " SD5.D5_DATA  <= '" + DTOS(dDataFim) + "' AND "
+cQuery    +=       " SD5.D_E_L_E_T_=' ' "
+cQuery    := ChangeQuery(cQuery)
+
+dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),cAliasSD5,.T.,.T.)
+For nX := 1 To Len(aStruSD5)
+	If aStruSD5[nX,2]<>"C" .And. aStruSD5[nX,2]<>"M" .And. aStruSD5[nX,3] > 0 
+		TcSetField(cAliasSD5,aStruSD5[nX,1],aStruSD5[nX,2],aStruSD5[nX,3],aStruSD5[nX,4])
+	EndIf
+Next nX
+
+ProcRegua(SD5->(RecCount()),21,4)
+While !Eof() .And. IIf(lQuery,.T.,SD5->D5_FILIAL == xFilial("SD5"))
+	If !Empty((cAliasSD5)->D5_OP)
+		dbSelectArea("SC2")
+		dbSeek(cFilSC2+(cAliasSD5)->D5_OP)
+		If Found() .And. Empty(SC2->C2_DATRF)
+			dbSelectArea(cAliasSD5)
+			dbSkip()
+			Loop
+		EndIf
+	Endif	
+	If !lQuery .And. (cAliasSD5)->D5_DATA > dDataFim
+		dbSelectArea(cAliasSD5)
+		dbSkip()
+		Loop
+	EndIf	
+
+	IncProc(OemToAnsi(STR0014)+" SD5")	//"Efetuando limpeza no arquivo"	
+
+	//	Gera Registro no arquivo morto
+	RecLock(cArqSD5,.T.)
+	For nCont := 1 To Fcount()
+		dbSelectArea(cAliasSD5)
+		cCampo 	:= FieldName(nCont)
+		cVal	:= FieldGet(FieldPos(cCampo))
+		dbSelectArea(cArqSD5)
+		nPos	:= FieldPos(cCampo)
+		FieldPut(nPos,cVal)
+	Next nCont
+	MsUnlock()	
+
+	//	Deleta registro do arquivo de origem
+	dbSelectArea("SD5")
+	If lQuery
+		dbGoto((cAliasSD5)->SD5RECNO)
+	EndIf	
+	RecLock("SD5",.F.,.T.)
+	dbDelete()
+	MsUnlock()	
+	dbSelectArea(cAliasSD5)
+	dbSkip()	
+End	
+dbSelectArea(cArqSD5)
+dbCloseArea()
+If lQuery
+	dbSelectArea(cAliasSD5)
+	dbCloseArea()
+EndIf
+dbSelectArea("SD5")
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590SD3 ³ Autor ³ Edson Maricate        ³ Data ³ 04.02.98 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Grava no arquivo morto e deleta os registros do SD3.		  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Fa590SD3(dDataFim,cDbf)                   			  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Fa590SD3(dDataFim,aDbf)
+Local nCont     := 0
+Local nPos      := 0
+Local nX        := 0
+Local cCampo    := ''
+Local cVal      := ''
+Local cQuery    := ''
+Local cAliasSD3 := 'SD3'
+Local aStruSD3  := {}
+Local lQuery    := .F.
+Local cFilSC2   := xFilial("SC2")
+
+Private cArqSD3 := ''
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Atualiza o log de processamento			    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogAtu("MENSAGEM",STR0021 + " SD3",STR0021 + " SD3") //"Limpeza de Registros - Tabela SD3"
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SD3								     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SD3")
+cArqSD3 := aDbf[5]
+aStruTbD3:= SD3->(dbStruct())
+dbCreate(cArqSD3,aStruTbD3,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSD3,cArqSD3,.T.,.F.)
+
+dbSelectArea("SC2")
+dbSetOrder(1)
+dbSelectArea("SD3")
+
+lQuery    := .T.
+aStruSD3  := SD3->(dbStruct())
+cAliasSD3 := GetNextAlias()
+
+cQuery    := "SELECT SD3.*,SD3.R_E_C_N_O_ SD3RECNO "
+cQuery    +=  " FROM " + RetSqlName("SD3")+" SD3 "
+cQuery    += " WHERE SD3.D3_FILIAL='"		+ xFilial("SD3") + "' AND "
+    cQuery    +=       " SD3.D3_EMISSAO <= '" 	+ DTOS(dDataFim) + "' AND "
+cQuery    +=       " SD3.D_E_L_E_T_=' ' "
+cQuery    := ChangeQuery(cQuery)
+
+dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),cAliasSD3,.T.,.T.)
+For nX := 1 To Len(aStruSD3)
+	If aStruSD3[nX,2]<>"C" .And. aStruSD3[nX,2]<>"M" .And. aStruSD3[nX,3] > 0 
+		TcSetField(cAliasSD3,aStruSD3[nX,1],aStruSD3[nX,2],aStruSD3[nX,3],aStruSD3[nX,4])
+	EndIf
+Next nX
+
+ProcRegua(SD3->(RecCount()),21,4)
+While !Eof() .And. IIf(lQuery,.T.,(cAliasSD3)->D3_FILIAL == xFilial("SD3"))
+
+	If !Empty((cAliasSD3)->D3_OP)
+		dbSelectArea("SC2")
+		dbSeek(cFilSC2+(cAliasSD3)->D3_OP)
+		If Found() .And. Empty(SC2->C2_DATRF)
+			dbSelectArea(cAliasSD3)
+			dbSkip()
+			Loop
+		EndIf
+	EndIf	
+
+	If !lQuery .And. (cAliasSD3)->D3_EMISSAO > dDataFim
+		dbSelectArea(cAliasSD3)
+		dbSkip()
+		Loop
+	EndIf	
+
+	IncProc(OemToAnsi(STR0014)+" SD3")		//"Efetuando limpeza no arquivo"
+
+	//	Gera Registro no arquivo morto
+	RecLock(cArqSD3,.T.)
+	For nCont := 1 To Fcount()
+		dbSelectArea(cAliasSD3)
+		cCampo 	:= FieldName(nCont)
+		cVal	:= FieldGet(FieldPos(cCampo))
+		dbSelectArea(cArqSD3)
+		nPos	:= FieldPos(cCampo)
+		FieldPut(nPos,cVal)
+	Next nCont
+	MsUnlock()	
+	//	Deleta registro do arquivo de origem
+	dbSelectArea("SD3")
+	If lQuery
+		dbGoto((cAliasSD3)->SD3RECNO)
+	EndIf	
+	RecLock("SD3",.F.,.T.)
+	dbDelete()
+	MsUnlock()	
+	dbSelectArea(cAliasSD3)
+	dbSkip()
+End	
+dbSelectArea(cArqSD3)
+dbCloseArea()
+If lQuery
+	dbSelectArea(cAliasSD3)
+	dbCloseArea()
+EndIf
+dbSelectArea("SD3")
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590SB9 ³ Autor ³ Edson Maricate        ³ Data ³ 04.02.98 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Grava no arquivo morto e deleta os registros do SB9.		  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Fa590SB9(dDataFim,cDbf)                				  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Fa590SB9(dDataFim,aDbf)
+Local nCont     := 0
+Local nPos      := 0
+Local nX        := 0
+Local cCampo    := ''
+Local cVal      := ''
+Local cQuery    := ''
+Local cAliasSB9 := 'SB9'
+Local aStruSB9  := {}
+Local lQuery    := .F.
+Local cFilSD3   := xFilial("SD3")
+
+Private cArqSB9 := ''
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Atualiza o log de processamento			    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogAtu("MENSAGEM",STR0021 + " SB9",STR0021 + " SB9") //"Limpeza de Registros - Tabela SB9"
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SB9                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SB9")
+cArqSB9 := aDbf[6]
+
+aStruTbB9:= SB9->(dbStruct())
+dbCreate(cArqSB9,aStruTbB9,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSB9,cArqSB9,.T.,.F.)
+
+dbSelectArea("SD3")
+dbSetOrder(3)
+dbSelectArea("SB9")
+
+lQuery    := .T.
+aStruSB9  := SB9->(dbStruct())
+cAliasSB9 := GetNextAlias()
+
+cQuery    := "SELECT SB9.*,SB9.R_E_C_N_O_ SB9RECNO "
+cQuery    +=  " FROM " + RetSqlName("SB9")+" SB9 "
+cQuery    += " WHERE SB9.B9_FILIAL='"  + xFilial("SB9") + "' AND "
+    cQuery    +=       " SB9.B9_DATA <= '" + DTOS(dDataFim) + "' AND "
+cQuery    +=       " SB9.D_E_L_E_T_=' ' "
+cQuery    := ChangeQuery(cQuery)
+
+dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),cAliasSB9,.T.,.T.)
+For nX := 1 To Len(aStruSB9)
+	If aStruSB9[nX,2]<>"C" .And. aStruSB9[nX,2]<>"M" .And. aStruSB9[nX,3] > 0 
+		TcSetField(cAliasSB9,aStruSB9[nX,1],aStruSB9[nX,2],aStruSB9[nX,3],aStruSB9[nX,4])
+	EndIf
+Next nX
+
+ProcRegua(SB9->(RecCount()),21,4)
+While !Eof() .And. IIf(lQuery,.T.,SB9->B9_FILIAL == xFilial("SB9"))
+	dbSelectArea("SD3")
+	dbSeek(cFilSD3+(cAliasSB9)->B9_COD+(cAliasSB9)->B9_LOCAL)
+	If Found() .Or. (cAliasSB9)->B9_DATA >= dDataFim
+		dbSelectArea(cAliasSB9)
+		dbSkip()
+		Loop
+	EndIf
+	IncProc(OemToAnsi(STR0014)+" SB9")	//"Efetuando limpeza no arquivo"
+	// Gera Registro no arquivo morto
+	RecLock(cArqSB9,.T.)
+	For nCont := 1 To Fcount()
+		dbSelectArea(cAliasSB9)
+		cCampo 	:= FieldName(nCont)
+		cVal	:= FieldGet(FieldPos(cCampo))
+		dbSelectArea(cArqSB9)
+		nPos	:= FieldPos(cCampo)
+		FieldPut(nPos,cVal)
+	Next nCont
+	MsUnlock()
+	//	Deleta registro do arquivo de origem
+	dbSelectArea("SB9")
+	If lQuery
+		dbGoto((cAliasSB9)->SB9RECNO)
+	EndIf
+	RecLock("SB9",.F.,.T.)
+	dbDelete()
+	MsUnlock()
+	dbSelectArea(cAliasSB9)
+	dbSkip()	
+End	
+dbSelectArea(cArqSB9)
+dbCloseArea()
+If lQuery
+	dbSelectArea(cAliasSB9)
+	dbCloseArea()
+EndIf
+dbSelectArea("SB9")
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590SB7 ³ Autor ³ Edson Maricate        ³ Data ³ 04.02.98 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Grava no arquivo morto e deleta os registros do SB7.		  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Fa590SB7(dDataFim,cDbf)                   		      ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Fa590SB7(dDataFim,aDbf)
+Local nCont     := 0
+Local nPos      := 0
+Local nX        := 0
+Local cCampo    := ''
+Local cVal      := ''
+Local cQuery    := ''
+Local cAliasSB7 := 'SB7'
+Local aStruSB7  := {}
+Local lQuery    := .F.
+Local cFilSD3   := xFilial("SD3")
+
+Private cArqSB7 := ''
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Atualiza o log de processamento			    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogAtu("MENSAGEM",STR0021 + " SB7",STR0021 + " SB7") //"Limpeza de Registros - Tabela SB7"
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SB7                                  ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SB7")
+cArqSB7 := aDbf[7]
+
+aStruTbB7:= SB7->(dbStruct())
+dbCreate(cArqSB7,aStruTbB7,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSB7,cArqSB7,.T.,.F.)
+
+dbSelectArea("SD3")
+dbSetOrder(3)
+dbSelectArea("SB7")
+
+lQuery    := .T.
+aStruSB7  := SB7->(dbStruct())
+cAliasSB7 := GetNextAlias()
+
+cQuery    := "SELECT SB7.*,SB7.R_E_C_N_O_ SB7RECNO "
+cQuery    +=  " FROM " + RetSqlName("SB7")+" SB7 "
+cQuery    += " WHERE SB7.B7_FILIAL='"  + xFilial("SB7") + "' AND "
+    cQuery    +=       " SB7.B7_DATA <= '" + DTOS(dDataFim) + "' AND "
+cQuery    +=       " SB7.D_E_L_E_T_=' ' "
+cQuery    := ChangeQuery(cQuery)
+
+dbUseArea(.T.,"TOPCONN",TcGenQry(,,cQuery),cAliasSB7,.T.,.T.)
+For nX := 1 To Len(aStruSB7)
+	If aStruSB7[nX,2]<>"C" .And. aStruSB7[nX,2]<>"M" .And. aStruSB7[nX,3] > 0 
+		TcSetField(cAliasSB7,aStruSB7[nX,1],aStruSB7[nX,2],aStruSB7[nX,3],aStruSB7[nX,4])
+	EndIf
+Next nX
+
+ProcRegua(SB7->(RecCount()),21,4)
+While !Eof() .And. IIf(lQuery,.T.,SB7->B7_FILIAL == xFilial("SB7"))
+	dbSelectArea("SD3")
+	dbSeek(cFilSD3+(cAliasSB7)->B7_COD+(cAliasSB7)->B7_LOCAL)
+	If Found() .Or. (cAliasSB7)->B7_DATA > dDataFim
+		dbSelectArea(cAliasSB7)
+		dbSkip()
+		Loop
+	EndIf
+
+	IncProc(OemToAnsi(STR0014)+" SB7")		//"Efetuando limpeza no arquivo"
+
+	//	Gera Registro no arquivo morto
+	RecLock(cArqSB7,.T.)
+	For nCont := 1 To Fcount()
+		dbSelectArea(cAliasSB7)
+		cCampo 	:= FieldName(nCont)
+		cVal	:= FieldGet(FieldPos(cCampo))
+		dbSelectArea(cArqSB7)
+		nPos	:= FieldPos(cCampo)
+		FieldPut(nPos,cVal)
+	Next nCont
+	MsUnlock()
+	//	Deleta registro do arquivo de origem
+	dbSelectArea("SB7")
+	If lQuery
+		dbGoto((cAliasSB7)->SB7RECNO)
+	EndIf
+	RecLock("SB7",.F.,.T.)
+	dbDelete()
+	MsUnlock()
+	(cAliasSB7)->(DBSKIP())	
+End	
+dbSelectArea(cArqSB7)
+dbCloseArea()
+If lQuery
+	dbSelectArea(cAliasSB7)
+	dbCloseArea()
+EndIf
+dbSelectArea("SB7")
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590SD7 ³ Autor ³ Marcelo Iuspa         ³ Data ³ 19.04.00 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Grava no arquivo morto e deleta os registros do SD7.		  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Fa590SD7(dDataFim,cDbf)                  				  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Fa590SD7(dDataFim,aDbf)
+Local nCont     := 0 
+Local nRecno    := 0
+Local nUltSaldo := 0
+Local cNumero   := ''
+Local cFilSD7   := xFilial("SD7")
+
+Private cArqSD7 := ''
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Atualiza o log de processamento			    ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+ProcLogAtu("MENSAGEM",STR0021 + " SD7",STR0021 + " SD7") //"Limpeza de Registros - Tabela SD7"
+
+//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+//³ Cria o arquivo morto p/ SD7								     ³
+//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+dbSelectArea("SD7")
+cArqSD7 := aDbf[8]
+
+aStruTbD7:= SD7->(dbStruct())
+dbCreate(cArqSD7,aStruTbD7,"TopCONN")
+dbUseArea(.T.,"TOPCONN",cArqSD7,cArqSD7,.T.,.F.)
+
+dbSelectArea("SD7")
+dbSetOrder(1)
+ProcRegua(SD7->(RecCount()),21,4)
+dbSeek(xFilial("SD7"))
+While !Eof() .And. SD7->D7_FILIAL == cFilSD7
+	lPodeApagar := .T.
+	If SD7->D7_LIBERA = "S"
+		cNumero := SD7->D7_NUMERO
+		nRecno  := SD7->(Recno())
+		While !Eof() .And. SD7->D7_FILIAL == cFilSD7 .And. cNumero == SD7->D7_NUMERO
+			IncProc(OemToAnsi(STR0014)+" SD7")	//"Efetuando limpeza no arquivo"
+			If SD7->D7_DATA > dDataFim .And. lPodeApagar
+				lPodeApagar := .F.
+			Endif
+			nUltSaldo := SD7->D7_SALDO
+			dbSkip()
+		EndDo
+	Else	
+		dbSkip()
+		Loop
+	Endif	
+	If lPodeApagar .And. nUltSaldo = 0
+		dbGoto(nRecno)
+		While !Eof() .And. SD7->D7_FILIAL == cFilSD7 .And. cNumero == SD7->D7_NUMERO
+			// Gera Registro no arquivo morto
+			RecLock(cArqSD7,.T.)
+			For nCont := 1 To Fcount()
+				FieldPut(nCont,SD7->(FieldGet(nCont)))
+			Next	
+			MsUnlock()
+			//	Deleta registro do arquivo de origem
+			dbSelectArea("SD7")
+			RecLock("SD7",.F.,.T.)
+			dbDelete()
+			MsUnlock()
+			dbSkip()	
+		EndDo
+	EndIf
+EndDo
+dbSelectArea(cArqSD7)
+dbCloseArea()
+dbSelectArea("SD7")
+Return
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590Arq ³ Autor ³ Cristina M. Ogura     ³ Data ³ 02.10.96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta matriz com nomes dos arquivos						  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe   ³ Fa590Arq(aArq) 			                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+Static Function Fa590Arq(aArq)
+Local cDia, cMes, cDbf, nCont
+cDia := StrZero(Day(dDataBase),2)
+cMes := StrZero(Month(dDataBase),2)
+For nCont := 1 to Len(aArq)
+	cDbf := SubStr(aArq[nCont],2,2) + SubStr(cNumEmp,1,2) + cDia + cMes
+	Aadd(aDbf,cDbf)
+Next nCont
+Return aDbf	
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590Choic³ Autor ³ Cristina M. Ogura    ³ Data ³02.10.96  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta achoice para digitacao								  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ Fa590Choic(aDbf)                                           ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+ßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßßß
+*/
+User Function Fa590Choic(aDbf)
+Return .T.
+
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590File³ Autor ³ Cristina M. Ogura     ³ Data ³ 02.10.96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Monta listbox com os nomes dos arquivos                    ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³ Uso      ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+*/
+User Function Fa590File(nItem)
+Local nOpca:=0
+Local cArq := aDbf[nItem]
+DEFINE MSDIALOG oDlg FROM  15,6 TO 90,223 TITLE OemToAnsi(STR0007) PIXEL //"Limpeza Mensal"
+@ -2, 2 TO 20, 106 OF oDlg  PIXEL
+@ 07,05 SAY     STR0017                   SIZE 22, 07 OF oDlg PIXEL		 //"Arquivo "
+@ 06,33 MSGET   cArq      Picture "@X"    SIZE 70, 10 OF oDlg PIXEL
+DEFINE SBUTTON FROM 24,51 TYPE 1 ENABLE OF oDlg ACTION (nOpca:=1,oDlg:End())
+DEFINE SBUTTON FROM 24,79 TYPE 2 ENABLE OF oDlg ACTION oDlg:End()
+ACTIVATE MSDIALOG oDlg CENTERED
+If nOpca==1
+	aDbf[nItem] := cArq
+EndIf
+Return Nil
+
+/*
+ÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜÜ
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+±±ÚÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÂÄÄÄÄÄÄÂÄÄÄÄÄÄÄÄÄÄ¿±±
+±±³Fun‡…o    ³ Fa590Teste ³ Autor ³ Cristina M. Ogura   ³ Data ³ 02.10.96 ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Descri‡…o ³ Limpeza de Arquivos do modulo de Compras                   ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Sintaxe	 ³ Fa590Teste(dDataFim)                                  ³±±
+±±ÃÄÄÄÄÄÄÄÄÄÄÅÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ´±±
+±±³Uso       ³ MATA590                                                    ³±±
+±±ÀÄÄÄÄÄÄÄÄÄÄÁÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ±±
+±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+*/
+User Function Fa590Teste(dDataFim)
+Local aDelArq		:={}
+Local nCont			:=0
+Local nCountArq		:=0
+Local nX			:=0 
+Local cArq
+Local cText			:= ""
+
+If Empty(dDataFim)
+	Help(" ",1,"CA280EMPTY")
+	Return .F.
+EndIf
+For nCont := 1 To Len(aDbf)
+	cArq := aDbf[nCont]
+	If Empty(cArq)
+		Help(" ",1,"CA280EMPTY")
+		Return .F.
+	EndIf
+	//ÚÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
+	//³ Verifica se os arquivos existem							 ³
+	//ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÙ
+	If MsFile(cArq,,"TOPCONN")
+		cText += aDbf[nCont]+CHR(13)+CHR(10)
+		Aadd(aDelArq,aDbf[nCont])
+	EndIf
+Next nCont	
+If len(aDelArq) > 0
+	lConfirma   :=MsgYesNo(OemToAnsi(STR0022+cText+STR0016+STR0023),OemToAnsi(STR0007))		//"Arquivo "###" j  existe !"###"Limpeza Mensal"
+	If lConfirma
+		For nX := 1 To Len(aDelArq)
+			If select(aDelArq[nX]) > 0
+				(aDelArq[nX])->(DbCloseArea())
+			EndIf
+			If TcSqlExec(' DROP TABLE '+aDelArq[nX] ) < 0 
+				TCSqlError()
+			EndIf
+		Next nX	
+	Else
+		Return .F.
+	EndIf
+EndIF
+	
+Return .T.

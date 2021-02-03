@@ -1,0 +1,32 @@
+0001#STR0001#ARG#CERTIFICADO DE RETENC. DE IVA
+0002#STR0002#ARG#CERTIFICADO DE RETENC. DE SUSS
+0003#STR0003#ARG#CONSTANCIA DE RETENC. PARA REG. GENERAL SUSS
+0004#STR0004#ARG#CONSTANCIA DE RETENC. PARA VALOR AGREGADO
+0005#STR0005#ARG#Emis.:
+0006#STR0006#ARG#Certificado:
+0007#STR0007#ARG#Proveedor:
+0008#STR0008#ARG#Direcc.:
+0009#STR0009#ARG#Provincia:
+0010#STR0010#ARG#Nº CUIT:
+0011#STR0011#ARG#Orden de pago
+0012#STR0012#ARG#Tot. Ord. Pago
+0013#STR0013#ARG#Alicuota
+0014#STR0014#ARG#Valor Retenc.
+0015#STR0015#ARG#Concepto
+0016#STR0016#ARG#Referencia
+0017#STR0017#ARG#Tipo
+0018#STR0018#ARG#Prefijo/Numero
+0019#STR0019#ARG#Cuota
+0020#STR0020#ARG#Valor S/Impuestos
+0021#STR0021#ARG#Valor Imp.
+0022#STR0022#ARG#Retenc.
+0023#STR0023#ARG#Firma
+0024#STR0024#ARG#Informacion de la declaracion del mes de
+0025#STR0025#ARG#del ano de
+0026#STR0026#ARG#COMPROBANTE NO VALIDO COMO CERTIFICADO DE RETENCIÓN
+0027#STR0027#ARG#Por RG 3726/15, a partir del 01/03/2015, los Certificados de Retención del Régimen de Seguridad Social se deben generar y emitir desde 
+0028#STR0028#ARG#el Sistema Integral de Retenciones Electrónicas (SIRE) de la Afip.
+0029#STR0029#ARG#Ud. podrá acceder a la página web de la Afip a efectos de obtener el comprobante de retención del presente pago, cuya identificación es: 
+0030#STR0030#ARG#Certificado Nro: 
+0031#STR0031#ARG#Código de Seguridad: 
+0032#STR0032#ARG#Respetando mayúsculas y minúsculas.
